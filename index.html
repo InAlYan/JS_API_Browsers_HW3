@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+
+    <div class="content">
+        <img src="#" alt="случайное изображение" class="img-box">
+        <p class="img-author"></p>
+        <p class="likes-count">Количество лайков: 0</p>
+        <button class="like">Понравилось</button>
+    </div>
+
+    <script>
+
+        const contentEl = document.querySelector('.content');
+        const imgBox = contentEl.querySelector('.img-box');
+        const authorP = contentEl.querySelector('.img-author');
+        const likesP = contentEl.querySelector('.likes-count');
+        const likeBtn = contentEl.querySelector('.like');
+
+        // Читаем счетчик лайков из хранилища
+        const likeCountersFromStorage = localStorage.getItem('likeCounters');
+        // Объект счетчик лайков для картинок создаем из хранилища или новый пустой
+        const likeCounters = likeCountersFromStorage ? JSON.parse(likeCountersFromStorage) : {};
+
+        async function fetchImage() {
+            try {
+                const response = await fetch('https://api.unsplash.com/photos/random/?client_id=NYxz42js1jTJOhND-yz0NWrv6giD7tVCiSyLmErWLYg');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.log(`Произошла ошибка: ${error}`);
+                return {};
+            }
+        }
+
+        async function prepareHTMLForPicture() {
+            const pictureData = await fetchImage();
+
+            if (pictureData) { // Картинка загружена
+
+                imgBox.setAttribute('src', `${pictureData.urls.small}`);
+                imgBox.setAttribute('alt', 'случайное изображение');
+                authorP.textContent = pictureData.user.name;
+
+                // Первый раз заносим количество лайков в счетчик лайков пришедших из api
+                if (!(pictureData.id in likeCounters)) {
+                    // Заносим количество лайков в счетчик лайков пришедших из api
+                    likeCounters[pictureData.id] = (pictureData.likes || 0);
+                    // Пишем объект лайков в локальное хранилище
+                    localStorage.setItem('likeCounters', JSON.stringify(likeCounters));
+                }
+                // Отображаем лайки
+                likesP.textContent = `Количество лайков: ${likeCounters[pictureData.id]}`;
+
+                likeBtn.addEventListener('click', function (e) {
+                    // Увеличиваем и отображаем лайки
+                    likesP.textContent = `Количество лайков: ${++likeCounters[pictureData.id]}`;
+                    // Пишем объект лайков в локальное хранилище
+                    localStorage.setItem('likeCounters', JSON.stringify(likeCounters));
+                });
+
+            } else { // Не удалось загрузить картинку
+                imgBox.setAttribute('src', '#');
+                imgBox.setAttribute('alt', 'не удалось загрузить изображение');
+                authorP.textContent = '';
+                likesP.textContent = 'Количество лайков: 0';
+            }
+
+        }
+
+        window.addEventListener('load', function (e) {
+            prepareHTMLForPicture();
+        });
+
+    </script>
+</body>
+</html>
